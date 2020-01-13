@@ -5,7 +5,7 @@ ARG VERSION
 ARG BUILD_DATE
 ARG VCS_REF
 LABEL \
-    org.opencontainers.image.authors="quentin.mcgaw@gmail.com" \
+    org.opencontainers.image.authors="quentin.mcgaw@gmail.com,georg.a.friedrich@gmail.com" \
     org.opencontainers.image.created=$BUILD_DATE \
     org.opencontainers.image.version=$VERSION \
     org.opencontainers.image.revision=$VCS_REF \
@@ -16,18 +16,14 @@ LABEL \
     org.opencontainers.image.description="VPN client to tunnel to private internet access servers using OpenVPN, IPtables, DNS over TLS and Alpine Linux"
 ENV USER= \
     PASSWORD= \
-    ENCRYPTION=strong \
-    PROTOCOL=udp \
-    REGION="CA Montreal" \
+    FILE="us-netflix.ovpn" \
     NONROOT=yes \
     DOT=on \
     BLOCK_MALICIOUS=off \
     BLOCK_NSA=off \
     UNBLOCK= \
     EXTRA_SUBNETS= \
-    PORT_FORWARDING=off \
-    PORT_FORWARDING_STATUS_FILE="/forwarded_port" \
-    TINYPROXY=off \
+    TINYPROXY=on \
     TINYPROXY_LOG=Critical \
     TINYPROXY_PORT=8888 \
     TINYPROXY_USER= \
@@ -38,21 +34,14 @@ ENV USER= \
     SHADOWSOCKS_PASSWORD= \
     TZ=
 ENTRYPOINT /entrypoint.sh
+
 EXPOSE 8888/tcp 8388/tcp 8388/udp
 HEALTHCHECK --interval=3m --timeout=3s --start-period=20s --retries=1 CMD /healthcheck.sh
-RUN apk add -q --progress --no-cache --update openvpn wget ca-certificates iptables unbound unzip tinyproxy jq tzdata && \
+
+RUN apk add -q --progress --no-cache --update openvpn wget ca-certificates iptables unbound tinyproxy curl jq tzdata && \
     echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && \
     apk add -q --progress --no-cache --update shadowsocks-libev && \
-    wget -q https://www.privateinternetaccess.com/openvpn/openvpn.zip \
-    https://www.privateinternetaccess.com/openvpn/openvpn-strong.zip \
-    https://www.privateinternetaccess.com/openvpn/openvpn-tcp.zip \
-    https://www.privateinternetaccess.com/openvpn/openvpn-strong-tcp.zip && \
     mkdir -p /openvpn/target && \
-    unzip -q openvpn.zip -d /openvpn/udp-normal && \
-    unzip -q openvpn-strong.zip -d /openvpn/udp-strong && \
-    unzip -q openvpn-tcp.zip -d /openvpn/tcp-normal && \
-    unzip -q openvpn-strong-tcp.zip -d /openvpn/tcp-strong && \
-    apk del -q --progress --purge unzip && \
     rm -rf /*.zip /var/cache/apk/* /etc/unbound/* /usr/sbin/unbound-anchor /usr/sbin/unbound-checkconf /usr/sbin/unbound-control /usr/sbin/unbound-control-setup /usr/sbin/unbound-host /etc/tinyproxy/tinyproxy.conf && \
     adduser nonrootuser -D -H --uid 1000 && \
     wget -q https://raw.githubusercontent.com/qdm12/files/master/named.root.updated -O /etc/unbound/root.hints && \
@@ -70,9 +59,9 @@ RUN apk add -q --progress --no-cache --update openvpn wget ca-certificates iptab
 COPY unbound.conf /etc/unbound/unbound.conf
 COPY tinyproxy.conf /etc/tinyproxy/tinyproxy.conf
 COPY shadowsocks.json /etc/shadowsocks.json
-COPY entrypoint.sh healthcheck.sh portforward.sh /
+COPY entrypoint.sh healthcheck.sh /
 RUN chown nonrootuser -R /etc/unbound /etc/tinyproxy && \
     chmod 700 /etc/unbound /etc/tinyproxy && \
     chmod 600 /etc/unbound/unbound.conf /etc/tinyproxy/tinyproxy.conf /etc/shadowsocks.json && \
-    chmod 500 /entrypoint.sh /healthcheck.sh /portforward.sh && \
+    chmod 500 /entrypoint.sh /healthcheck.sh && \
     chmod 400 /etc/unbound/root.hints /etc/unbound/root.key /etc/unbound/*.bz2

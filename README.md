@@ -35,10 +35,9 @@
 
 - <details><summary>Configure everything with environment variables</summary><p>
 
-    - [Destination region](https://www.privateinternetaccess.com/pages/network)
-    - Internet protocol
-    - Level of encryption
-    - PIA Username and password
+    - OpenVPN source file
+    - mount ovpn files into `/openvpn/configs/` (if you have keys put them into directory `keys/` in the config folder)
+    - VPN Username and password
     - DNS over TLS
     - Malicious DNS blocking
     - Internal firewall
@@ -88,7 +87,7 @@
 
     ```bash
     docker run -d --init --name=pia --cap-add=NET_ADMIN --device=/dev/net/tun \
-    -e REGION="CA Montreal" -e USER=js89ds7 -e PASSWORD=8fd9s239G \
+    -e FILE="us-netflix.ovpn" -e USER=js89ds7 -e PASSWORD=8fd9s239G \
     qmcgaw/private-internet-access
     ```
 
@@ -118,9 +117,7 @@ docker run --rm --network=container:pia alpine:3.10 wget -qO- https://ipinfo.io
 
 | Environment variable | Default | Description |
 | --- | --- | --- |
-| `REGION` | `CA Montreal` | One of the [PIA regions](https://www.privateinternetaccess.com/pages/network/) |
-| `PROTOCOL` | `udp` | `tcp` or `udp` |
-| `ENCRYPTION` | `strong` | `normal` or `strong` |
+| `FILE` | | Your openvpn config file |
 | `USER` | | Your PIA username |
 | `PASSWORD` | | Your PIA password |
 | `NONROOT` | `yes` | Run OpenVPN without root, `yes` or `no` |
@@ -129,8 +126,6 @@ docker run --rm --network=container:pia alpine:3.10 wget -qO- https://ipinfo.io
 | `BLOCK_NSA` | `off` | `on` or `off`, blocks NSA hostnames |
 | `UNBLOCK` | | comma separated string (i.e. `web.com,web2.ca`) to unblock hostnames |
 | `EXTRA_SUBNETS` | | comma separated subnets allowed in the container firewall (i.e. `192.168.1.0/24,192.168.10.121,10.0.0.5/28`) |
-| `PORT_FORWARDING` | `off` | Set to `on` to forward a port on PIA server |
-| `PORT_FORWARDING_STATUS_FILE` | `/forwarded_port` | File path to store the forwarded port number |
 | `TINYPROXY` | `on` | `on` or `off`, to enable the internal HTTP proxy tinyproxy |
 | `TINYPROXY_LOG` | `Critical` | `Info`, `Warning`, `Error` or `Critical` |
 | `TINYPROXY_PORT` | `8888` | `1024` to `65535` internal port for HTTP proxy |
@@ -230,14 +225,6 @@ There are various ways to achieve this, depending on your use case.
     ```
 
     </p></details>
-
-## Port forwarding
-
-By setting `PORT_FORWARDING` environment variable to `on`, the forwarded port will be read and written to the file specified in `PORT_FORWARDING_STATUS_FILE` (by default, this is set to `/forwarded_port`). If the location for this file does not exist, it will be created automatically.
-
-You can mount this file as a volume to read it from other containers.
-
-Note that not all regions support port forwarding.
 
 ## For the paranoids
 

@@ -55,8 +55,6 @@ printf "ShadowSocks version: $(ss-server --help | head -n 2 | tail -n 1 | cut -d
 ############################################
 # BACKWARD COMPATIBILITY PARAMETERS
 ############################################
-[ "$PORT_FORWARDING" == "false" ] && PORT_FORWARDING=on
-[ "$PORT_FORWARDING" == "true" ] && PORT_FORWARDING=off
 if [ -z $TINYPROXY ] && [ ! -z $PROXY ]; then
   TINYPROXY=$PROXY
 fi
@@ -78,11 +76,12 @@ fi
 ############################################
 exitIfUnset USER
 exitIfUnset PASSWORD
-exitIfNotIn ENCRYPTION "normal,strong"
-exitIfNotIn PROTOCOL "tcp,udp"
+exitIfUnset FILE
 exitIfNotIn NONROOT "yes,no"
-cat "/openvpn/$PROTOCOL-$ENCRYPTION/$REGION.ovpn" &> /dev/null
-exitOnError $? "/openvpn/$PROTOCOL-$ENCRYPTION/$REGION.ovpn is not accessible"
+cat "/openvpn/configs/$FILE" &> /dev/null
+exitOnError $? "/openvpn/configs/$FILE is not accessible"
+PROTOCOL=$(grep proto /openvpn/configs/$FILE | tr -s ' ' | cut -d' ' -f2)
+
 for EXTRA_SUBNET in ${EXTRA_SUBNETS//,/ }; do
   if [ $(echo "$EXTRA_SUBNET" | grep -Eo '^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(/([0-2]?[0-9])|([3]?[0-1]))?$') = "" ]; then
     printf "Extra subnet $EXTRA_SUBNET is not a valid IPv4 subnet of the form 255.255.255.255/31 or 255.255.255.255\n"
@@ -100,11 +99,6 @@ if [ "$DOT" == "off" ]; then
     printf "DOT is off so BLOCK_NSA cannot be on\n"
     exit 1
   fi
-fi
-exitIfNotIn PORT_FORWARDING "on,off"
-if [ "$PORT_FORWARDING" == "on" ] && [ -z "$PORT_FORWARDING_STATUS_FILE" ]; then
-  printf "PORT_FORWARDING is on but PORT_FORWARDING_STATUS_FILE is not set\n"
-  exit 1
 fi
 exitIfNotIn TINYPROXY "on,off"
 if [ "$TINYPROXY" == "on" ]; then
@@ -157,8 +151,7 @@ fi
 ############################################
 printf "\n"
 printf "OpenVPN parameters:\n"
-printf " * Region: $REGION\n"
-printf " * Encryption: $ENCRYPTION\n"
+printf " * File: $FILE\n"
 printf " * Protocol: $PROTOCOL\n"
 printf " * Running without root: $NONROOT\n"
 printf "DNS over TLS:\n"
@@ -181,9 +174,6 @@ if [ "$TINYPROXY" == "on" ]; then
   unset -v tinyproxy_auth
 fi
 printf " * ShadowSocks SOCKS5 proxy: $SHADOWSOCKS\n"
-printf "PIA parameters:\n"
-printf " * Remote port forwarding: $PORT_FORWARDING\n"
-[ "$PORT_FORWARDING" == "on" ] && printf " * Remote port forwarding status file: $PORT_FORWARDING_STATUS_FILE\n"
 printf "\n"
 
 #####################################################
@@ -263,22 +253,22 @@ fi
 # Reading chosen OpenVPN configuration
 ############################################
 printf "[INFO] Reading OpenVPN configuration...\n"
-CONNECTIONSTRING=$(grep -i "/openvpn/$PROTOCOL-$ENCRYPTION/$REGION.ovpn" -e 'privateinternetaccess.com')
+CONNECTIONSTRING=$(grep -i "/openvpn/configs/$FILE" -e 'remote ')
 exitOnError $?
-PORT=$(echo $CONNECTIONSTRING | cut -d' ' -f3)
+PORT=$(echo $CONNECTIONSTRING | tr -s ' ' | cut -d' ' -f3)
 if [ "$PORT" = "" ]; then
-  printf "[ERROR] Port not found in /openvpn/$PROTOCOL-$ENCRYPTION/$REGION.ovpn\n"
-  exit 1
+  printf "[WARNING] Using default port\n"
+  PORT="1194"
 fi
-PIADOMAIN=$(echo $CONNECTIONSTRING | cut -d' ' -f2)
-if [ "$PIADOMAIN" = "" ]; then
-  printf "[ERROR] Domain not found in /openvpn/$PROTOCOL-$ENCRYPTION/$REGION.ovpn\n"
+DOMAIN=$(echo $CONNECTIONSTRING | cut -d' ' -f2)
+if [ "$DOMAIN" = "" ]; then
+  printf "[ERROR] Domain not found in /openvpn/configs/$FILE\n"
   exit 1
 fi
 printf " * Port: $PORT\n"
-printf " * Domain: $PIADOMAIN\n"
-printf "[INFO] Detecting IP addresses corresponding to $PIADOMAIN...\n"
-VPNIPS=$(nslookup $PIADOMAIN localhost | tail -n +3 | grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}')
+printf " * Domain: $DOMAIN\n"
+printf "[INFO] Detecting IP addresses corresponding to $DOMAIN...\n"
+VPNIPS=$(nslookup $DOMAIN localhost | tail -n +3 | grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}')
 exitOnError $?
 for ip in $VPNIPS; do
   printf "   $ip\n";
@@ -290,13 +280,13 @@ done
 TARGET_PATH="/openvpn/target"
 printf "[INFO] Creating target OpenVPN files in $TARGET_PATH..."
 rm -rf $TARGET_PATH/*
-cd "/openvpn/$PROTOCOL-$ENCRYPTION"
-cp -f *.crt "$TARGET_PATH"
-exitOnError $? "Cannot copy crt file to $TARGET_PATH"
-cp -f *.pem "$TARGET_PATH"
-exitOnError $? "Cannot copy pem file to $TARGET_PATH"
-cp -f "$REGION.ovpn" "$TARGET_PATH/config.ovpn"
-exitOnError $? "Cannot copy $REGION.ovpn file to $TARGET_PATH"
+cd "/openvpn/configs/"
+if [ -d "keys/" ]; then
+  cp "keys/*" "$TARGET_PATH/" 
+  exitOnError $? "Cannot copy keys in keys/ to $TARGET_PATH"
+fi
+cp -f "$FILE" "$TARGET_PATH/config.ovpn"
+exitOnError $? "Cannot copy $FILE file to $TARGET_PATH"
 sed -i "/$CONNECTIONSTRING/d" "$TARGET_PATH/config.ovpn"
 exitOnError $? "Cannot delete '$CONNECTIONSTRING' from $TARGET_PATH/config.ovpn"
 sed -i '/resolv-retry/d' "$TARGET_PATH/config.ovpn"
@@ -470,14 +460,6 @@ if [ "$SHADOWSOCKS" == "on" ]; then
   ARGS="$ARGS -k $SHADOWSOCKS_PASSWORD"
   ss-server $ARGS &
   unset -v ARGS
-fi
-
-############################################
-# READ FORWARDED PORT
-############################################
-
-if [ "$PORT_FORWARDING" == "on" ]; then
-  sleep 10 && /portforward.sh &
 fi
 
 ############################################

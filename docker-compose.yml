@@ -18,9 +18,7 @@ services:
     environment:
       - USER=js89ds7
       - PASSWORD=8fd9s239G
-      - ENCRYPTION=strong
-      - PROTOCOL=udp
-      - REGION=CA Montreal
+      - FILE=us-netflix.ovpn
       - NONROOT=no
       - DOT=on
       - BLOCK_MALICIOUS=on
