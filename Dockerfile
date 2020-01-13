@@ -9,10 +9,7 @@ LABEL \
     org.opencontainers.image.created=$BUILD_DATE \
     org.opencontainers.image.version=$VERSION \
     org.opencontainers.image.revision=$VCS_REF \
-    org.opencontainers.image.url="https://github.com/qdm12/private-internet-access-docker" \
-    org.opencontainers.image.documentation="https://github.com/qdm12/private-internet-access-docker" \
-    org.opencontainers.image.source="https://github.com/qdm12/private-internet-access-docker" \
-    org.opencontainers.image.title="PIA client" \
+    org.opencontainers.image.title="OpenVPN Proxy client" \
     org.opencontainers.image.description="VPN client to tunnel to private internet access servers using OpenVPN, IPtables, DNS over TLS and Alpine Linux"
 ENV USER= \
     PASSWORD= \

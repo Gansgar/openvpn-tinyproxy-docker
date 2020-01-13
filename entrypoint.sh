@@ -44,7 +44,7 @@ printf " =========================================\n"
 printf " ============= PIA CONTAINER =============\n"
 printf " =========================================\n"
 printf " =========================================\n"
-printf " == by github.com/qdm12 - Quentin McGaw ==\n\n"
+printf " = by github.com/gansgar - G. Friedrich ==\n\n"
 
 printf "OpenVPN version: $(openvpn --version | head -n 1 | grep -oE "OpenVPN [0-9\.]* " | cut -d" " -f2)\n"
 printf "Unbound version: $(unbound -h | grep "Version" | cut -d" " -f2)\n"
