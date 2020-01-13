@@ -51,6 +51,7 @@ printf "Unbound version: $(unbound -h | grep "Version" | cut -d" " -f2)\n"
 printf "Iptables version: $(iptables --version | cut -d" " -f2)\n"
 printf "TinyProxy version: $(tinyproxy -v | cut -d" " -f2)\n"
 printf "ShadowSocks version: $(ss-server --help | head -n 2 | tail -n 1 | cut -d" " -f 2)\n"
+printf "NPM version: $(npm --version)\n"
 
 ############################################
 # BACKWARD COMPATIBILITY PARAMETERS
@@ -346,6 +347,8 @@ printf "$VPN_DEVICE\n"
 ############################################
 # FIREWALL
 ############################################
+IPTABLE_CONFIG="/iptables.conf"
+
 printf "[INFO] Setting firewall\n"
 printf " * Blocking everyting\n"
 printf "   * Deleting all iptables rules..."
@@ -414,6 +417,28 @@ do
   # iptables -A OUTPUT -o $INTERFACE -s $SUBNET -d $EXTRASUBNET -j ACCEPT
 done
 
+printf " * dumping rules into $IPTABLE_CONFIG.strict"
+iptables-save > "$IPTABLE_CONFIG.strict"
+
+iptables -F
+exitOnError $?
+iptables --delete-chain
+exitOnError $?
+iptables -t nat -F
+exitOnError $?
+iptables -t nat --delete-chain
+exitOnError $?
+iptables -P OUTPUT ACCEPT
+exitOnError $?
+iptables -P INPUT ACCEPT
+exitOnError $?
+iptables -P FORWARD ACCEPT
+exitOnError $?
+
+printf " * dumping allow all rules into $IPTABLES_CONFIG.relax"
+iptables-save > "$IPTABLE_CONFIG.relax"
+
+
 ############################################
 # TINYPROXY LAUNCH
 ############################################
@@ -465,10 +490,15 @@ fi
 ############################################
 # OPENVPN LAUNCH
 ############################################
-printf "[INFO] Launching OpenVPN\n"
-cd "$TARGET_PATH"
-openvpn --config config.ovpn "$@"
-status=$?
-printf "\n =========================================\n"
-printf " OpenVPN exit with status $status\n"
-printf " =========================================\n\n"
+# printf "[INFO] Launching OpenVPN\n"
+# cd "$TARGET_PATH"
+# openvpn --config config.ovpn "$@"
+# status=$?
+# printf "\n =========================================\n"
+# printf " OpenVPN exit with status $status\n"
+# printf " =========================================\n\n"
+# 
+# while true; do sleep 1; done
+
+cd /usr/src/app
+node src/server.js

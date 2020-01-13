@@ -1,0 +1,29 @@
+doctype html
+html(lang="en")
+  head
+    title="VPN-Proxy Control"
+  body
+    #container
+    script(type="text/javascript").
+      function run(next) {
+        fetch(`/toggle?next=${next}`)
+          .then(function(response) {
+            return response.json();
+          })
+          .then(function(json) {
+            setup()
+            console.log(json);
+          });
+      }
+
+      function setup() {
+        fetch("/button")
+          .then(function(response) {
+            return response.text();
+          })
+          .then(function(html) {
+            document.getElementById("container").innerHTML = html
+          });
+      }
+
+      window.onload = setup()

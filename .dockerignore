@@ -7,3 +7,5 @@ ci.sh
 docker-compose.yml
 LICENSE
 README.md
+node_modules
+npm-debug.log

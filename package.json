@@ -1,0 +1,15 @@
+{
+  "name": "proxy_vpn_controller",
+  "version": "1.0.0",
+  "description": "Run a proxy connect to an vpn inside docker and controll it over nodejs",
+  "author": "Georg Friedrich <georg.a.friedrich@gmail.com>",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.16.1",
+    "pug": "^2.0.4",
+    "shelljs": "^0.8.3"
+  }
+}

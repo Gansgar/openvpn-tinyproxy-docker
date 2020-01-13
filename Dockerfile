@@ -1,6 +1,6 @@
-ARG ALPINE_VERSION=3.10
+ARG NODE_VERSION=10
 
-FROM alpine:${ALPINE_VERSION}
+FROM node:${NODE_VERSION}-alpine
 ARG VERSION
 ARG BUILD_DATE
 ARG VCS_REF
@@ -30,17 +30,18 @@ ENV USER= \
     SHADOWSOCKS_PORT=8388 \
     SHADOWSOCKS_PASSWORD= \
     TZ=
-ENTRYPOINT /entrypoint.sh
 
 EXPOSE 8888/tcp 8388/tcp 8388/udp
 HEALTHCHECK --interval=3m --timeout=3s --start-period=20s --retries=1 CMD /healthcheck.sh
+
+# Install vpn
 
 RUN apk add -q --progress --no-cache --update openvpn wget ca-certificates iptables unbound tinyproxy curl jq tzdata && \
     echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && \
     apk add -q --progress --no-cache --update shadowsocks-libev && \
     mkdir -p /openvpn/target && \
     rm -rf /*.zip /var/cache/apk/* /etc/unbound/* /usr/sbin/unbound-anchor /usr/sbin/unbound-checkconf /usr/sbin/unbound-control /usr/sbin/unbound-control-setup /usr/sbin/unbound-host /etc/tinyproxy/tinyproxy.conf && \
-    adduser nonrootuser -D -H --uid 1000 && \
+    adduser nonrootuser -D -H --uid 1001 && \
     wget -q https://raw.githubusercontent.com/qdm12/files/master/named.root.updated -O /etc/unbound/root.hints && \
     wget -q https://raw.githubusercontent.com/qdm12/files/master/root.key.updated -O /etc/unbound/root.key && \
     cd /tmp && \
@@ -62,3 +63,19 @@ RUN chown nonrootuser -R /etc/unbound /etc/tinyproxy && \
     chmod 600 /etc/unbound/unbound.conf /etc/tinyproxy/tinyproxy.conf /etc/shadowsocks.json && \
     chmod 500 /entrypoint.sh /healthcheck.sh && \
     chmod 400 /etc/unbound/root.hints /etc/unbound/root.key /etc/unbound/*.bz2
+
+# install npm
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+RUN npm install && mkdir src
+COPY src ./src
+
+# run and stop script
+COPY control-script /control-script
+RUN chown nonrootuser -R /control-script && \
+    chmod 700 -R /control-script
+
+# startup cmd
+EXPOSE 8080
+ENTRYPOINT /entrypoint.sh
