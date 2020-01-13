@@ -14,8 +14,8 @@ services:
       - 8080:8080/tcp
     # command:
     environment:
-      - USER=KS2-8ac178b74a0d517d3a7870c389585bcd
-      - PASSWORD=XHHOjkiGGyo3
+      - USER=
+      - PASSWORD=
       - FILE=netflix-stream.ovpn
       - NONROOT=no
       - DOT=on
