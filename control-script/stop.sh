@@ -5,4 +5,4 @@ rm /.openvpn.running || exit
 killall openvpn
 
 # reset iptables
-iptables-restore /iptables.conf.relax
+/control-script/reset-iptables.sh

@@ -4,19 +4,20 @@ html(lang="en")
     title="VPN-Proxy Control"
   body
     #container
-    script(type="text/javascript").
+    #log-container
+    script.
       function run(next) {
         fetch(`/toggle?next=${next}`)
           .then(function(response) {
             return response.json();
           })
           .then(function(json) {
-            setup()
+            fetch_button()
             console.log(json);
           });
       }
 
-      function setup() {
+      function fetch_button() {
         fetch("/button")
           .then(function(response) {
             return response.text();
@@ -24,6 +25,21 @@ html(lang="en")
           .then(function(html) {
             document.getElementById("container").innerHTML = html
           });
+      }
+
+      function setup() {
+        fetch_button()
+
+        var get = function() {
+          fetch("/log").then(function(response) { return response.text(); }).then(function(html) {
+              document.getElementById("log-container").innerHTML = html
+            });
+        }
+
+        setInterval(function() {
+          get()
+        }, 5000)
+        get()
       }
 
       window.onload = setup()

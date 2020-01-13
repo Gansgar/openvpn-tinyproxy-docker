@@ -1,11 +1,14 @@
 'use strict';
 
 const express = require('express');
-const shell = require("shelljs")
+const shell = require("shelljs");
+const fs = require('fs');
 
 // Constants
 const PORT = 8080;
 const HOST = '0.0.0.0';
+
+var log_file = "/var/log/openvpn"
 
 // App
 const app = express();
@@ -22,6 +25,14 @@ app.get('/button', (req, res) => {
   res.render('button', {
     status: (state?"off":"on")
   })
+})
+
+app.get('/log', (req, res) => {
+  var log = ""
+  if (fs.existsSync(log_file))
+    log = fs.readFileSync(log_file, "utf8")
+  var html = `<pre>${log}</pre>`
+  res.send(html)
 })
 
 app.get('/toggle', (req, res) => {

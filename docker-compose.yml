@@ -1,24 +1,22 @@
 version: "3.7"
 services:
-  pia:
-    build: https://github.com/qdm12/private-internet-access-docker.git
-    image: qmcgaw/private-internet-access
-    container_name: pia
+  tinyproxy-vpn:
+    build: .
+    image: tinyproxy-vpn
+    container_name: tinyproxy-vpn
     cap_add:
       - NET_ADMIN
     devices:
       - /dev/net/tun
-    network_mode: bridge
     init: true
     ports:
       - 8888:8888/tcp
-      - 8388:8388/tcp
-      - 8388:8388/udp
+      - 8080:8080/tcp
     # command:
     environment:
-      - USER=js89ds7
-      - PASSWORD=8fd9s239G
-      - FILE=us-netflix.ovpn
+      - USER=KS2-8ac178b74a0d517d3a7870c389585bcd
+      - PASSWORD=XHHOjkiGGyo3
+      - FILE=netflix-stream.ovpn
       - NONROOT=no
       - DOT=on
       - BLOCK_MALICIOUS=on
@@ -30,7 +28,6 @@ services:
       - TINYPROXY_LOG=Critical
       - TINYPROXY_USER=
       - TINYPROXY_PASSWORD=
-      - SHADOWSOCKS=on
-      - SHADOWSOCKS_LOG=on
-      - SHADOWSOCKS_PASSWORD=
-    restart: always
+      - SHADOWSOCKS=off
+    volumes:
+      - /home/georg/projects/openvpn-tinyproxy-docker/openvpn-config:/openvpn/configs
