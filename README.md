@@ -43,6 +43,7 @@
     - Internal firewall
     - Web HTTP proxy
     - Run openvpn without root
+    - VPN connection can be controlled over HOST:8080 using nodejs
 
     </p></details>
 - Connect other containers to it, [see this](https://github.com/qdm12/private-internet-access-docker#connect-to-it)
